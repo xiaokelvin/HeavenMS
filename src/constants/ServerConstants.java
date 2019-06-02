@@ -57,7 +57,7 @@ public class ServerConstants {
     
     
     //Server Flags
-    public static final boolean USE_CUSTOM_KEYSET = true;           //Enables auto-setup of the HeavenMS's custom keybindings when creating characters.
+    public static final boolean USE_CUSTOM_KEYSET = false;           //Enables auto-setup of the HeavenMS's custom keybindings when creating characters.
     public static final boolean USE_DEBUG = false;                  //Will enable some text prints on the client, oriented for debugging purposes.
     public static final boolean USE_DEBUG_SHOW_INFO_EQPEXP = false; //Prints on the cmd all equip exp gain info.
     public static       boolean USE_DEBUG_SHOW_RCVD_PACKET = false; //Prints on the cmd all received packet ids.
@@ -70,7 +70,7 @@ public class ServerConstants {
     public static final boolean USE_MAXRANGE_ECHO_OF_HERO = true;
     public static final boolean USE_MTS = false;
     public static final boolean USE_CPQ = true;                     //Renders the CPQ available or not.
-    public static final boolean USE_AUTOHIDE_GM = false;            //When enabled, GMs are automatically hidden when joining. Thanks to Steven Deblois (steven1152).
+    public static final boolean USE_AUTOHIDE_GM = true;            //When enabled, GMs are automatically hidden when joining. Thanks to Steven Deblois (steven1152).
     public static final boolean USE_BUYBACK_SYSTEM = true;          //Enables the HeavenMS-builtin buyback system, to be used by dead players when clicking the MTS button.
     public static final boolean USE_FIXED_RATIO_HPMP_UPDATE = true; //Enables the HeavenMS-builtin HPMP update based on the current pool to max pool ratio.
     public static final boolean USE_FAMILY_SYSTEM = false;
@@ -122,7 +122,7 @@ public class ServerConstants {
     
     //Announcement Configuration
     public static final boolean USE_ANNOUNCE_SHOPITEMSOLD = false;  //Automatic message sent to owner when an item from the Player Shop or Hired Merchant is sold.
-    public static final boolean USE_ANNOUNCE_CHANGEJOB = false;     //Automatic message sent to acquantainces when changing jobs.
+    public static final boolean USE_ANNOUNCE_CHANGEJOB = true;     //Automatic message sent to acquantainces when changing jobs.
     
     //Cash Shop Configuration
     public static final boolean USE_JOINT_CASHSHOP_INVENTORY = true;//Enables usage of a same cash shop inventory for explorers, cygnus and legends. Items from exclusive cash shop inventories won't show up on the shared inventory, though.
@@ -141,10 +141,10 @@ public class ServerConstants {
     public static final boolean USE_WHOLE_SERVER_RANKING = false;   //Enables a ranking pool made from every character registered on the server for the "ranks" command, instead of separated by worlds.
     
     //Server Rates And Experience
-    public static final int EXP_RATE = 10;                          //NOTE: World-specific rates within "world.ini" OVERRIDES the default rates from here.
-    public static final int MESO_RATE = 10;
-    public static final int DROP_RATE = 10;
-    public static final int BOSS_DROP_RATE = 10;                    //NOTE: Boss drop rate OVERRIDES common drop rate, for bosses-only.
+    public static final int EXP_RATE = 2;                          //NOTE: World-specific rates within "world.ini" OVERRIDES the default rates from here.
+    public static final int MESO_RATE = 2;
+    public static final int DROP_RATE = 2;
+    public static final int BOSS_DROP_RATE = 2;                    //NOTE: Boss drop rate OVERRIDES common drop rate, for bosses-only.
     public static final int QUEST_RATE = 5;                         //Multiplier for Exp & Meso gains when completing a quest. Only available when USE_QUEST_RATE is true. Stacks with server Exp & Meso rates.
     public static final int FISHING_RATE = 10;                      //Multiplier for success likelihood on meso thrown during fishing.
     public static final int TRAVEL_RATE = 10;                       //Means of transportation rides/departs using 1/N of the default time.
@@ -154,7 +154,7 @@ public class ServerConstants {
     public static final double PQ_BONUS_EXP_RATE = 0.5;             //Rate for the PQ exp reward.
     
     //Miscellaneous Configuration
-    public static String TIMEZONE = "GMT-3";
+    public static String TIMEZONE = "GMT+8";
     public static boolean USE_DISPLAY_NUMBERS_WITH_COMMA = true;        //Enforce comma on displayed strings (use this when USE_UNITPRICE_WITH_COMMA is active and you still want to display comma-separated values).
     public static boolean USE_UNITPRICE_WITH_COMMA = true;              //Set this accordingly with the layout of the unitPrices on Item.wz XML's, whether it's using commas or dots to represent fractions.
     public static final byte MIN_UNDERLEVEL_TO_EXP_GAIN = 20;           //Characters are unable to get EXP from a mob if their level are under this threshold, only if "USE_ENFORCE_MOB_LEVEL_RANGE" is enabled. For bosses, this attribute is doubled.
@@ -189,16 +189,16 @@ public class ServerConstants {
     //Some Gameplay Enhancing Configurations
     //Scroll Configuration
     public static final boolean USE_PERFECT_GM_SCROLL = true;   //Scrolls from GMs never uses up slots nor fails.
-    public static final boolean USE_PERFECT_SCROLLING = true;   //Scrolls doesn't use slots upon failure.
-    public static final boolean USE_ENHANCED_CHSCROLL = true;   //Equips even more powerful with chaos upgrade.
+    public static final boolean USE_PERFECT_SCROLLING = false;   //Scrolls doesn't use slots upon failure.
+    public static final boolean USE_ENHANCED_CHSCROLL = false;   //Equips even more powerful with chaos upgrade.
     public static final boolean USE_ENHANCED_CRAFTING = true;   //Apply chaos scroll on every equip crafted.
     public static final boolean USE_ENHANCED_CLNSLATE = true;   //Clean slates can be applied to recover successfully used slots as well.
-    public static final int SCROLL_CHANCE_RATE = 10;            //Number of rolls for success on a scroll, set 1 for default.
-    public static final int CHSCROLL_STAT_RATE = 3;             //Number of rolls of stat upgrade on a successfully applied chaos scroll, set 1 for default.
+    public static final int SCROLL_CHANCE_RATE = 1;            //Number of rolls for success on a scroll, set 1 for default.
+    public static final int CHSCROLL_STAT_RATE = 1;             //Number of rolls of stat upgrade on a successfully applied chaos scroll, set 1 for default.
     public static final int CHSCROLL_STAT_RANGE = 6;            //Stat upgrade range (-N, N) on chaos scrolls.
     
     //Beginner Skills Configuration
-    public static final boolean USE_ULTRA_NIMBLE_FEET = true;   //Massive speed & jump upgrade.
+    public static final boolean USE_ULTRA_NIMBLE_FEET = false;   //Massive speed & jump upgrade.
     public static final boolean USE_ULTRA_RECOVERY = true;      //Massive recovery amounts overtime.
     public static final boolean USE_ULTRA_THREE_SNAILS = true;  //Massive damage on shell toss.
     
@@ -232,7 +232,7 @@ public class ServerConstants {
     public static final int EXPAND_GUILD_MAX_COST = 5000000;
 
     //Equipment Configuration
-    public static final boolean USE_EQUIPMNT_LVLUP_SLOTS = true;//Equips can upgrade slots at level up.
+    public static final boolean USE_EQUIPMNT_LVLUP_SLOTS = false;//Equips can upgrade slots at level up.
     public static final boolean USE_EQUIPMNT_LVLUP_POWER = true;//Enable more powerful stat upgrades at equip level up.
     public static final boolean USE_EQUIPMNT_LVLUP_CASH = true; //Enable equip leveling up on cash equipments as well.
     public static final boolean USE_SPIKES_AVOID_BANISH = true; //Shoes equipped with spikes prevents mobs from banishing wearer.
@@ -255,7 +255,7 @@ public class ServerConstants {
     public static final boolean PLAYERNPC_AUTODEPLOY = true;    //Makes PlayerNPC automatically deployed on the Hall of Fame at the instant one reaches max level. If false, eligible players must talk to 1st job instructor to deploy a NPC.
     
     //Pet Auto-Pot Configuration
-    public static final boolean USE_COMPULSORY_AUTOPOT = true;  //Pets will consume as many potions as needed to fulfill the AUTOHP/MP ratio threshold.
+    public static final boolean USE_COMPULSORY_AUTOPOT = false;  //Pets will consume as many potions as needed to fulfill the AUTOHP/MP ratio threshold.
     public static final boolean USE_EQUIPS_ON_AUTOPOT = true;   //Player MaxHP and MaxMP check values on autopot handler will be updated by the HP/MP bonuses on equipped items.
     public static final double PET_AUTOHP_RATIO = 0.99;         //Will automatically consume potions until given ratio of the MaxHP/MaxMP is reached.
     public static final double PET_AUTOMP_RATIO = 0.99;

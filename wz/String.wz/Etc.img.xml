@@ -2241,8 +2241,8 @@
       <string name="desc" value="A piece of the MapleStory&apos;s 4 Year Anniversary cake.  You can complete the cake by opening the cake box and placing 4 cake pieces on the plate."/>
     </imgdir>
     <imgdir name="4001168">
-      <string name="name" value="Golden Maple Leaf"/>
-      <string name="desc" value="A Golden Maple Leaf that fell from a Maple Tree specially for MapleStory&apos;s 4 Year Anniversary.  Take it to the keeper of the maple tree and receive a special present."/>
+      <string name="name" value="10 000 NX Prepaid"/>
+      <string name="desc" value="Take it to Cody to exchange for 10 000 NX Prepaid."/>
     </imgdir>
     <imgdir name="4001169">
       <string name="name" value="Monster Marble"/>
