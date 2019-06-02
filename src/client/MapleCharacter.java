@@ -6305,7 +6305,7 @@ public class MapleCharacter extends AbstractMapleCharacterObject {
             getGuild().broadcast(MaplePacketCreator.levelUpMessage(2, level, name), this.getId());
         }
 
-        if (level % 20 == 0) {
+        if (level % 40 == 0) {
             if (ServerConstants.USE_ADD_SLOTS_BY_LEVEL == true) {
                 if (!isGM()) {
                     for (byte i = 1; i < 5; i++) {

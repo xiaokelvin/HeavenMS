@@ -210,7 +210,7 @@ public class ServerConstants {
     
     //Character Configuration
     public static final boolean USE_ADD_SLOTS_BY_LEVEL = true;  //Slots are added each 20 levels.
-    public static final boolean USE_ADD_RATES_BY_LEVEL = true;  //Rates are added each 20 levels.
+    public static final boolean USE_ADD_RATES_BY_LEVEL = false;  //Rates are added each 20 levels.
     public static final boolean USE_STACK_COUPON_RATES = false; //Multiple coupons effects builds up together.
     public static final boolean USE_PERFECT_PITCH = true;       //For lvl 30 or above, each lvlup grants player 1 perfect pitch.
     
