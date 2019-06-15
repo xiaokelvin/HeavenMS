@@ -823,6 +823,7 @@ public class AbstractPlayerInteraction {
 			}
 		}
 
+		int bonus = size < 4 ? 100 : 70 + (size * 10);
 		for (MaplePartyCharacter member : party.getMembers()) {
 			if(member == null || !member.isOnline()){
 				continue;
