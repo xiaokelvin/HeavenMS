@@ -901,6 +901,9 @@ public class AbstractPlayerInteraction {
 			getMap(mapid).broadcastMessage(MaplePacketCreator.removeItemFromMap(i.getObjectId(), 0, c.getPlayer().getId()));
 		}
 	}
+        public void destroyNpc(int mapid, int npcId) {
+        c.getChannelServer().getMapFactory().getMap(mapid).destroyNPC(npcId);
+        }
 
 	public void useItem(int id) {
 		MapleItemInformationProvider.getInstance().getItemEffect(id).applyTo(c.getPlayer());
