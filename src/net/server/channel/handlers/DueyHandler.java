@@ -45,9 +45,8 @@ public final class DueyHandler extends AbstractMaplePacketHandler {
             short amount = slea.readShort();
             int mesos = slea.readInt();
             String recipient = slea.readMapleAsciiString();
-            boolean quick = slea.readByte() != 0;
-            String message = quick ? slea.readMapleAsciiString() : "";
-            DueyProcessor.dueySendItem(c, inventId, itemPos, amount, mesos, message, recipient, quick);
+            String message = slea.readByte() != 0 ? slea.readMapleAsciiString() : "";
+            DueyProcessor.dueySendItem(c, inventId, itemPos, amount, mesos, message, recipient);
         } else if (operation == DueyProcessor.Actions.TOSERVER_REMOVE_PACKAGE.getCode()) {
             int packageid = slea.readInt();
             
@@ -56,8 +55,6 @@ public final class DueyHandler extends AbstractMaplePacketHandler {
             int packageid = slea.readInt();
             
             DueyProcessor.dueyClaimPackage(c, packageid);
-        } else if (operation == DueyProcessor.Actions.TOSERVER_CLAIM_PACKAGE.getCode()) {
-            DueyProcessor.dueySendTalk(c, false);
         }
     }
 }

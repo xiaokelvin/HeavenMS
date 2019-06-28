@@ -78,10 +78,6 @@ public class DueyPackage {
     public long sentTimeInMilliseconds() {
         Calendar cal = Calendar.getInstance();
         cal.set(year, month, day);
-        cal.set(Calendar.HOUR, 0);
-        cal.set(Calendar.MINUTE, 0);
-        cal.set(Calendar.SECOND, 0);
-        cal.set(Calendar.MILLISECOND, 0);
         return cal.getTimeInMillis();
     }
 

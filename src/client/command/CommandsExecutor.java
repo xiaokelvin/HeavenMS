@@ -62,7 +62,7 @@ public class CommandsExecutor {
         return heading == USER_HEADING;
     }
 
-    private HashMap<String, Command> registeredCommands = new HashMap<>();
+    private HashMap<String, RegisteredCommand> registeredCommands = new HashMap<>();
     private Pair<List<String>, List<String>> levelCommandsCursor;
     private List<Pair<List<String>, List<String>>> commandsNameDesc = new ArrayList<>();
 
@@ -94,7 +94,7 @@ public class CommandsExecutor {
     
     private void handleInternal(MapleClient client, String message){
         if (client.getPlayer().getMapId() == 300000012) {
-            client.getPlayer().yellowMessage("You do not have permission to use commands while in jail.");
+            client.getPlayer().yellowMessage("You not have permission to use this command while in jail.");
             return;
         }
         final String splitRegex = "[ ]";
@@ -107,13 +107,13 @@ public class CommandsExecutor {
         final String commandName = splitedMessage[0].toLowerCase();
         final String[] lowercaseParams = splitedMessage[1].toLowerCase().split(splitRegex);
         
-        final Command command = registeredCommands.get(commandName);
+        final RegisteredCommand command = registeredCommands.get(commandName);
         if (command == null){
             client.getPlayer().yellowMessage("Command '" + commandName + "' is not available. See @commands for a list of available commands.");
             return;
         }
         if (client.getPlayer().gmLevel() < command.getRank()){
-            client.getPlayer().yellowMessage("You do not have permission to use this command.");
+            client.getPlayer().yellowMessage("You not have permission to use this command.");
             return;
         }
         String[] params;
@@ -122,9 +122,16 @@ public class CommandsExecutor {
         } else {
             params = new String[]{};
         }
-        
-        command.execute(client, params);
-        writeLog(client, message);
+        try {
+            Command commandInstance = command.getCommandClass().newInstance();
+            commandInstance.execute(client, params);
+            writeLog(client, message);
+        } catch (InstantiationException e) {
+            e.printStackTrace();
+        } catch (IllegalAccessException e) {
+            e.printStackTrace();
+        }
+
     }
 
     private void writeLog(MapleClient client, String command){
@@ -165,19 +172,11 @@ public class CommandsExecutor {
             return;
         }
         
+        RegisteredCommand registeredCommand = new RegisteredCommand(commandClass, rank);
+        
         String commandName = syntax.toLowerCase();
         addCommandInfo(commandName, commandClass);
-        
-        try {
-            Command commandInstance = commandClass.newInstance();     // thanks Halcyon for noticing commands getting reinstanced every call
-            commandInstance.setRank(rank);
-            
-            registeredCommands.put(commandName, commandInstance);
-        } catch (InstantiationException e) {
-            e.printStackTrace();
-        } catch (IllegalAccessException e) {
-            e.printStackTrace();
-        }
+        registeredCommands.put(commandName, registeredCommand);
     }
 
     private void registerLv0Commands(){

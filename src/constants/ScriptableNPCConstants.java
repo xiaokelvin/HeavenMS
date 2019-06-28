@@ -17,7 +17,6 @@ public class ScriptableNPCConstants {
     
     public static final Set<Pair<Integer, String>> SCRIPTABLE_NPCS = new HashSet<Pair<Integer, String>>(){{
         add(new Pair<>(9200000, "Cody"));
-        add(new Pair<>(9001105, "Grandpa Moon Bunny"));
     }};
     
 }

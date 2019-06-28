@@ -294,9 +294,11 @@ public final class UseCashItemHandler extends AbstractMaplePacketHandler {
                         if (item == null) //hack
                         {
                             return;
+                        } else if (item.isUntradeable() || ii.isUnmerchable(item.getItemId())) {
+                            player.dropMessage(1, "You cannot trade this item.");
+                            c.announce(MaplePacketCreator.enableActions());
+                            return;
                         }
-                        
-                        // thanks Conrad for noticing that untradeable items should be allowed in megas
                     }
                     Server.getInstance().broadcastMessage(c.getWorld(), MaplePacketCreator.itemMegaphone(msg, whisper, c.getChannel(), item));
                     break;
@@ -396,7 +398,7 @@ public final class UseCashItemHandler extends AbstractMaplePacketHandler {
             ii.getItemEffect(itemId).applyTo(player);
             remove(c, position, itemId);
         } else if (itemType == 533) {
-            DueyProcessor.dueySendTalk(c, true);
+            DueyProcessor.dueySendTalk(c);
         } else if (itemType == 537) {
             if (GameConstants.isFreeMarketRoom(player.getMapId())) {
                 player.dropMessage(5, "You cannot use the chalkboard here.");
@@ -567,7 +569,7 @@ public final class UseCashItemHandler extends AbstractMaplePacketHandler {
                     client.announce(MaplePacketCreator.modifyInventory(true, mods));
 
                     ScrollResult scrollResult = scrolled.getLevel() > curlevel ? ScrollResult.SUCCESS : ScrollResult.FAIL;
-                    player.getMap().broadcastMessage(MaplePacketCreator.getScrollEffect(player.getId(), scrollResult, false, false));
+                    player.getMap().broadcastMessage(MaplePacketCreator.getScrollEffect(player.getId(), scrollResult, false));
                     if (eSlot < 0 && (scrollResult == ScrollResult.SUCCESS)) {
                         player.equipChanged();
                     }

@@ -101,7 +101,6 @@ public class MapleMap {
     private static final Map<Integer, Pair<Integer, Integer>> dropBoundsCache = new HashMap<>(100);
     
     private Map<Integer, MapleMapObject> mapobjects = new LinkedHashMap<>();
-    private Set<Integer> selfDestructives = new LinkedHashSet<>();
     private Collection<SpawnPoint> monsterSpawn = Collections.synchronizedList(new LinkedList<SpawnPoint>());
     private Collection<SpawnPoint> allMonsterSpawn = Collections.synchronizedList(new LinkedList<SpawnPoint>());
     private AtomicInteger spawnedMonstersOnMap = new AtomicInteger(0);
@@ -123,7 +122,6 @@ public class MapleMap {
     private AtomicInteger runningOid = new AtomicInteger(1000000001);
     private int returnMapId;
     private int channel, world;
-    private int seats;
     private byte monsterRate;
     private boolean clock;
     private boolean boat;
@@ -134,8 +132,7 @@ public class MapleMap {
     private MapleMapEffect mapEffect = null;
     private boolean everlast = false;
     private int forcedReturnMap = 999999999;
-    private int timeLimit;
-    private long mapTimer;
+    private long timeLimit;
     private int decHP = 0;
     private int protectItem = 0;
     private boolean town;
@@ -148,6 +145,7 @@ public class MapleMap {
     private int fieldLimit = 0;
     private int mobCapacity = -1;
     private MapleMonsterAggroCoordinator aggroMonitor = null;   // aggroMonitor activity in sync with itemMonitor
+    private ScheduledFuture<?> mapMonitor = null;
     private ScheduledFuture<?> itemMonitor = null;
     private ScheduledFuture<?> expireItemsTask = null;
     private ScheduledFuture<?> mobSpawnLootTask = null;
@@ -309,7 +307,7 @@ public class MapleMap {
         this.forcedReturnMap = map;
     }
 
-    public int getTimeLimit() {
+    public long getTimeLimit() {
         return timeLimit;
     }
 
@@ -318,7 +316,7 @@ public class MapleMap {
     }
 
     public int getTimeLeft() {
-        return (int) ((mapTimer - System.currentTimeMillis()) / 1000);
+        return (int) ((timeLimit - System.currentTimeMillis()) / 1000);
     }
     
     public void setReactorState() {
@@ -398,16 +396,6 @@ public class MapleMap {
         } finally {
             objectWLock.unlock();
         }
-    }
-    
-    public void addSelfDestructive(MapleMonster mob) {
-        if (mob.getStats().selfDestruction() != null) {
-            this.selfDestructives.add(mob.getObjectId());
-        }
-    }
-    
-    public boolean removeSelfDestructive(int mapobjectid) {
-        return this.selfDestructives.remove(mapobjectid);
     }
     
     private void spawnAndAddRangedMapObject(MapleMapObject mapobject, DelayedPacketCreation packetbakery) {
@@ -1343,11 +1331,9 @@ public class MapleMap {
         }
         if (monster.isAlive()) {
             boolean killed = monster.damage(chr, damage, false);
-            
-            selfDestruction selfDestr = monster.getStats().selfDestruction();
-            if (selfDestr != null && selfDestr.getHp() > -1) {// should work ;p
-                if (monster.getHp() <= selfDestr.getHp()) {
-                    killMonster(monster, chr, true, selfDestr.getAction());
+            if (monster.getStats().selfDestruction() != null && monster.getStats().selfDestruction().getHp() > -1) {// should work ;p
+                if (monster.getHp() <= monster.getStats().selfDestruction().getHp()) {
+                    killMonster(monster, chr, true, monster.getStats().selfDestruction().getAction());
                     return true;
                 }
             }
@@ -1921,6 +1907,7 @@ public class MapleMap {
         spawnAndAddRangedMapObject(monster, new DelayedPacketCreation() {
             @Override
             public void sendPackets(MapleClient c) {
+
                 c.announce(MaplePacketCreator.spawnMonster(monster, false));
             }
         });
@@ -1932,7 +1919,6 @@ public class MapleMap {
         }
         
         spawnedMonstersOnMap.incrementAndGet();
-        addSelfDestructive(monster);
         applyRemoveAfter(monster);
     }
     
@@ -2066,7 +2052,6 @@ public class MapleMap {
         }
         
         spawnedMonstersOnMap.incrementAndGet();
-        addSelfDestructive(monster);
         applyRemoveAfter(monster);  // thanks LightRyuzaki for pointing issues with spawned CWKPQ mobs not applying this
     }
 
@@ -2103,7 +2088,6 @@ public class MapleMap {
         }
 
         spawnedMonstersOnMap.incrementAndGet();
-        addSelfDestructive(monster);
         applyRemoveAfter(monster);
     }
 
@@ -2118,7 +2102,6 @@ public class MapleMap {
         });
 
         spawnedMonstersOnMap.incrementAndGet();
-        addSelfDestructive(monster);
     }
 
     public void makeMonsterReal(final MapleMonster monster) {
@@ -3829,14 +3812,6 @@ public class MapleMap {
     public boolean getDocked() {
         return this.docked;
     }
-    
-    public void setSeats(int seats) {
-        this.seats = seats;
-    }
-    
-    public int getSeats() {
-        return seats;
-    }
 
     public void broadcastGMMessage(MapleCharacter source, final byte[] packet, boolean repeatToSource) {
         broadcastGMMessage(repeatToSource ? null : source, packet, Double.POSITIVE_INFINITY, source.getPosition());
@@ -3929,7 +3904,35 @@ public class MapleMap {
             this.broadcastMessage(MaplePacketCreator.removeItemFromMap(i.getObjectId(), 0, 0));
         }
     }
-    
+
+    public void addMapTimer(int time) {
+        timeLimit = System.currentTimeMillis() + (time * 1000);
+        broadcastMessage(MaplePacketCreator.getClock(time));
+        mapMonitor = TimerManager.getInstance().register(new Runnable() {
+            @Override
+            public void run() {
+                if (timeLimit != 0 && timeLimit < System.currentTimeMillis()) {
+                    warpEveryone(getForcedReturnId());
+                }
+                
+                if (getCharacters().isEmpty()) {
+                    resetReactors();
+                    killAllMonsters();
+                    clearDrops();
+                    timeLimit = 0;
+                    if (mapid >= 922240100 && mapid <= 922240119) {
+                        toggleHiddenNPC(9001108);
+                    }
+                    
+                    if (mapMonitor != null) {
+                        mapMonitor.cancel(true);
+                        mapMonitor = null;
+                    }
+                }
+            }
+        }, 1000);
+    }
+
     public void setFieldLimit(int fieldLimit) {
         this.fieldLimit = fieldLimit;
     }
@@ -4076,7 +4079,7 @@ public class MapleMap {
         return this.mapid >= 109010000 && this.mapid < 109050000 || this.mapid > 109050001 && this.mapid <= 109090000;
     }
 
-    public void setTimeMob(int id, String msg) {
+    public void timeMob(int id, String msg) {
         timeMob = new Pair<>(id, msg);
     }
 
@@ -4203,8 +4206,8 @@ public class MapleMap {
 
                 @Override
                 public void monsterDamaged(MapleCharacter from, int trueDmg) {
-                    // thanks Halcyon for noticing HT not dropping loots due to propagated damage not registering attacker
-                    ht.applyFakeDamage(from, trueDmg, true);
+                    ht.applyAndGetHpDamage(trueDmg, true);
+                    ht.broadcastMobHpBar(from);
                 }
 
                 @Override
@@ -4219,9 +4222,7 @@ public class MapleMap {
     
     public boolean claimOwnership(MapleCharacter chr) {
         if (mapOwner == null) {
-            this.mapOwner = chr;
-            chr.setOwnedMap(this);
-            
+            mapOwner = chr;
             mapOwnerLastActivityTime = Server.getInstance().getCurrentTime();
             
             getChannelServer().registerOwnedMap(this);
@@ -4233,9 +4234,7 @@ public class MapleMap {
     
     public boolean unclaimOwnership(MapleCharacter chr) {
         if (mapOwner == chr) {
-            this.mapOwner = null;
-            chr.setOwnedMap(null);
-            
+            mapOwner = null;
             mapOwnerLastActivityTime = Long.MAX_VALUE;
             
             getChannelServer().unregisterOwnedMap(this);
@@ -4533,6 +4532,11 @@ public class MapleMap {
         footholds = null;
         portals.clear();
         mapEffect = null;
+        
+        if(mapMonitor != null) {
+            mapMonitor.cancel(false);
+            mapMonitor = null;
+        }
         
         chrWLock.lock();
         try {

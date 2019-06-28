@@ -42,9 +42,9 @@ public class MapleMiniDungeon {
     int baseMap;
     long expireTime;
     
-    public MapleMiniDungeon(int base, long timeLimit) {
+    public MapleMiniDungeon(int base, int durationMin) {
         baseMap = base;
-        expireTime = timeLimit * 1000;
+        expireTime = durationMin * 60 * 1000;
         
         timeoutTask = TimerManager.getInstance().schedule(new Runnable() {
             @Override

@@ -22,7 +22,6 @@
  */
 package client;
 
-import server.minigame.MapleRockPaperScissor;
 import java.awt.Point;
 import java.lang.ref.WeakReference;
 import java.sql.Connection;
@@ -95,10 +94,11 @@ import server.maps.MapleMapObject;
 import server.maps.MapleMapObjectType;
 import server.maps.MapleMiniGame;
 import server.maps.MapleMiniGame.MiniGameResult;
-import server.life.MaplePlayerNPC;
 import server.maps.MaplePlayerShop;
 import server.maps.MaplePlayerShopItem;
 import server.maps.MapleSummon;
+import server.life.MaplePlayerNPC;
+import server.life.MonsterDropEntry;
 import server.maps.SavedLocation;
 import server.maps.SavedLocationType;
 import server.partyquest.AriantColiseum;
@@ -221,7 +221,7 @@ public class MapleCharacter extends AbstractMapleCharacterObject {
     private AtomicInteger exp = new AtomicInteger();
     private AtomicInteger gachaexp = new AtomicInteger();
     private AtomicInteger meso = new AtomicInteger();
-    private AtomicInteger chair = new AtomicInteger(-1);
+    private AtomicInteger chair = new AtomicInteger();
     private int merchantmeso;
     private BuddyList buddylist;
     private EventInstanceManager eventInstance = null;
@@ -233,7 +233,6 @@ public class MapleCharacter extends AbstractMapleCharacterObject {
     private MapleJob job = MapleJob.BEGINNER;
     private MapleMessenger messenger = null;
     private MapleMiniGame miniGame;
-    private MapleRockPaperScissor rps;
     private MapleMount maplemount;
     private MapleParty party;
     private MaplePet[] pets = new MaplePet[3];
@@ -249,7 +248,6 @@ public class MapleCharacter extends AbstractMapleCharacterObject {
     private SkillMacro[] skillMacros = new SkillMacro[5];
     private List<Integer> lastmonthfameids;
     private List<WeakReference<MapleMap>> lastVisitedMaps = new LinkedList<>();
-    private WeakReference<MapleMap> ownedMap = new WeakReference<>(null);
     private final Map<Short, MapleQuestStatus> quests;
     private Set<MapleMonster> controlled = new LinkedHashSet<>();
     private Map<Integer, String> entered = new LinkedHashMap<>();
@@ -827,26 +825,6 @@ public class MapleCharacter extends AbstractMapleCharacterObject {
             }
         }
         return maxbasedamage;
-    }
-    
-    public int calculateMaxBaseMagicDamage() {
-        int maxbasedamage = getTotalMagic();
-        int totalint = getTotalInt();
-        
-        if (totalint > 2000) {
-            maxbasedamage -= 2000;
-            maxbasedamage += (int) ((0.09033024267 * totalint) + 3823.8038);
-        } else {
-            maxbasedamage -= totalint;
-            
-            if (totalint > 1700) {
-                maxbasedamage += (int) (0.1996049769 * Math.pow(totalint, 1.300631341));
-            } else {
-                maxbasedamage += (int) (0.1996049769 * Math.pow(totalint, 1.290631341));
-            }
-        }
-        
-        return (maxbasedamage * 107) / 100;
     }
 
     public void setCombo(short count) {
@@ -1686,14 +1664,6 @@ public class MapleCharacter extends AbstractMapleCharacterObject {
             petLock.unlock();
         }
     }
-    
-    public void setOwnedMap(MapleMap map) {
-        ownedMap = new WeakReference<>(map);
-    }
-    
-    public MapleMap getOwnedMap() {
-        return ownedMap.get();
-    }
 
     public void notifyMapTransferToPartner(int mapid) {
         if(partnerId > 0) {
@@ -2465,7 +2435,7 @@ public class MapleCharacter extends AbstractMapleCharacterObject {
     }
     
     private void startChairTask() {
-        if (chair.get() < 0) {
+        if (chair.get() == 0) {
             return;
         }
         
@@ -2674,8 +2644,8 @@ public class MapleCharacter extends AbstractMapleCharacterObject {
                 chrLock.unlock();
             }
             
-            if (disease == MapleDisease.SEDUCE && chair.get() < 0) {
-                sitChair(-1);
+            if (disease == MapleDisease.SEDUCE && chair.get() != 0) {
+                sitChair(0);
             }
             
             final List<Pair<MapleDisease, Integer>> debuff = Collections.singletonList(new Pair<>(disease, Integer.valueOf(skill.getX())));
@@ -5110,7 +5080,7 @@ public class MapleCharacter extends AbstractMapleCharacterObject {
     public int getTotalMagic() {
         return localmagic;
     }
-    
+
     public int getTotalWatk() {
         return localwatk;
     }
@@ -5369,10 +5339,6 @@ public class MapleCharacter extends AbstractMapleCharacterObject {
         return playerShop;
     }
     
-    public MapleRockPaperScissor getRPS() { // thanks inhyuk for suggesting RPS addition
-        return rps;
-    }
-    
     public void setGMLevel(int level) {
         this.gmLevel = Math.min(level, 6);
         this.gmLevel = Math.max(level, 0);
@@ -5390,7 +5356,6 @@ public class MapleCharacter extends AbstractMapleCharacterObject {
         closeTrade();
         closePlayerShop();
         closeMiniGame(true);
-        closeRPS();
         closeHiredMerchant(false);
         closePlayerMessenger();
         
@@ -5547,19 +5512,23 @@ public class MapleCharacter extends AbstractMapleCharacterObject {
 
     public final byte getQuestStatus(final int quest) {
         synchronized (quests) {
-            MapleQuestStatus mqs = quests.get((short) quest);
-            if (mqs != null) {
-                return (byte) mqs.getStatus().getId();
-            } else {
-                return 0;
+            for (final MapleQuestStatus q : quests.values()) {
+                if (q.getQuest().getId() == quest) {
+                    return (byte) q.getStatus().getId();
+                }
             }
+            return 0;
         }
     }
     
     public final MapleQuestStatus getMapleQuestStatus(final int quest) {
         synchronized (quests) {
-            MapleQuestStatus mqs = quests.get((short) quest);
-            return mqs;
+            for (final MapleQuestStatus q : quests.values()) {
+                if (q.getQuest().getId() == quest) {
+                    return q;
+                }
+            }
+            return null;
         }
     }
 
@@ -6116,9 +6085,13 @@ public class MapleCharacter extends AbstractMapleCharacterObject {
     public void leaveMap() {
         releaseControlledMonsters();
         visibleMapObjects.clear();
-        setChair(-1);
+        setChair(0);
         if (hpDecreaseTask != null) {
             hpDecreaseTask.cancel(false);
+        }
+        
+        if (map.unclaimOwnership(this)) {
+            map.dropMessage(5, "This lawn is now free real estate.");
         }
         
         AriantColiseum arena = this.getAriantColiseum();
@@ -7438,12 +7411,12 @@ public class MapleCharacter extends AbstractMapleCharacterObject {
     
     private void unsitChairInternal() {
         int chairid = chair.get();
-        if (chairid >= 0) {
+        if (chairid != 0) {
             if (ItemConstants.isFishingChair(chairid)) {
                 this.getWorldServer().unregisterFisherPlayer(this);
             }
             
-            setChair(-1);
+            setChair(0);
             if (unregisterChairBuff()) {
                 getMap().broadcastMessage(this, MaplePacketCreator.cancelForeignChairSkillEffect(this.getId()), false);
             }
@@ -7457,24 +7430,22 @@ public class MapleCharacter extends AbstractMapleCharacterObject {
     public void sitChair(int itemId) {
         if (client.tryacquireClient()) {
             try {
-                if (this.isLoggedinWorld()) {
-                    if (itemId >= 1000000) {    // sit on item chair
-                        if (chair.get() < 0) {
-                            setChair(itemId);
-                            getMap().broadcastMessage(this, MaplePacketCreator.showChair(this.getId(), itemId), false);
-                        }
-                        announce(MaplePacketCreator.enableActions());
-                    } else if (itemId >= 0) {    // sit on map chair
-                        if (chair.get() < 0) {
-                            setChair(itemId);
-                            if (registerChairBuff()) {
-                                getMap().broadcastMessage(this, MaplePacketCreator.giveForeignChairSkillEffect(this.getId()), false);
-                            }
-                            announce(MaplePacketCreator.cancelChair(itemId));
-                        }
-                    } else {    // stand up
-                        unsitChairInternal();
+                if (itemId >= 1000000) {    // sit on item chair
+                    if (chair.get() == 0) {
+                        setChair(itemId);
+                        getMap().broadcastMessage(this, MaplePacketCreator.showChair(this.getId(), itemId), false);
                     }
+                    announce(MaplePacketCreator.enableActions());
+                } else if (itemId != 0) {    // sit on map chair
+                    if (chair.get() == 0) {
+                        setChair(itemId);
+                        if (registerChairBuff()) {
+                            getMap().broadcastMessage(this, MaplePacketCreator.giveForeignChairSkillEffect(this.getId()), false);
+                        }
+                        announce(MaplePacketCreator.cancelChair(itemId));
+                    }
+                } else {    // stand up
+                    unsitChairInternal();
                 }
             } finally {
                 client.releaseClient();
@@ -8983,18 +8954,6 @@ public class MapleCharacter extends AbstractMapleCharacterObject {
 
     public void setName(String name) {
         this.name = name;
-    }
-    
-    public void setRPS(MapleRockPaperScissor rps) {
-        this.rps = rps;
-    }
-    
-    public void closeRPS() {
-        MapleRockPaperScissor rps = this.rps;
-        if (rps != null) {
-            rps.dispose(client);
-            setRPS(null);
-        }
     }
 
     public void changeName(String name) {

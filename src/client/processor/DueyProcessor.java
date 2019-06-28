@@ -112,14 +112,10 @@ public class DueyProcessor {
         return null;
     }
     
-    private static String getCurrentDate(boolean quick) {
+    private static String getCurrentDate() {
         String date = "";
         Calendar cal = Calendar.getInstance();
-        if (!quick) {
-            cal.add(Calendar.DATE, 1);
-        }
-        
-        int day = cal.get(Calendar.DATE);
+        int day = cal.get(Calendar.DATE) - 1; // instant duey ?
         int month = cal.get(Calendar.MONTH) + 1; // its an array of months.
         int year = cal.get(Calendar.YEAR);
         date += day <= 9 ? "0" + day + "-" : "" + day + "-";
@@ -136,7 +132,7 @@ public class DueyProcessor {
         ResultSet rs = null;
         try {
             con = DatabaseConnection.getConnection();
-            ps = con.prepareStatement("SELECT SenderName, Type FROM dueypackages WHERE ReceiverId = ? AND Checked = 1 ORDER BY Type DESC");
+            ps = con.prepareStatement("SELECT Mesos FROM dueypackages WHERE ReceiverId = ? and Checked = 1");
             ps.setInt(1, player.getId());
             rs = ps.executeQuery();
             if (rs.next()) {
@@ -147,11 +143,11 @@ public class DueyProcessor {
                     pss.executeUpdate();
                     pss.close();
                     con2.close();
-                    
-                    c.announce(MaplePacketCreator.sendDueyParcelReceived(rs.getString("SenderName"), rs.getInt("Type") == 1));
                 } catch (SQLException e) {
                     e.printStackTrace();
                 }
+
+                c.announce(MaplePacketCreator.sendDueyNotification(false));
             }
         } catch (SQLException e) {
             e.printStackTrace();
@@ -245,7 +241,7 @@ public class DueyProcessor {
         return packages;
     }
     
-    private static int createPackage(int mesos, String message, String sender, int toCid, boolean quick) {
+    private static int createPackage(int mesos, String message, String sender, int toCid) {
         try {
             Connection con = null;
             PreparedStatement ps = null;
@@ -253,17 +249,16 @@ public class DueyProcessor {
         
             try {
                 con = DatabaseConnection.getConnection();
-                ps = con.prepareStatement("INSERT INTO `dueypackages` (ReceiverId, SenderName, Mesos, TimeStamp, Message, Type, Checked) VALUES (?, ?, ?, ?, ?, ?, 1)", Statement.RETURN_GENERATED_KEYS);
+                ps = con.prepareStatement("INSERT INTO `dueypackages` (ReceiverId, SenderName, Mesos, TimeStamp, Message, Checked) VALUES (?, ?, ?, ?, ?, 1)", Statement.RETURN_GENERATED_KEYS);
                 ps.setInt(1, toCid);
                 ps.setString(2, sender);
                 ps.setInt(3, mesos);
-                ps.setString(4, getCurrentDate(quick));
+                ps.setString(4, getCurrentDate());
                 ps.setString(5, message);
-                ps.setInt(6, quick ? 1 : 0);
 
                 int updateRows = ps.executeUpdate();
                 if (updateRows < 1) {
-                    FilePrinter.printError(FilePrinter.INSERT_CHAR, "Error trying to create package [mesos: " + mesos + ", " + sender + ", quick: " + quick + ", to CharacterId: " + toCid + "]");
+                    FilePrinter.printError(FilePrinter.INSERT_CHAR, "Error trying to create package [mesos: " + mesos + ", " + sender + ", to CharacterId: " + toCid + "]");
                     return -1;
                 }
                 
@@ -272,7 +267,7 @@ public class DueyProcessor {
                 if (rs.next()) {
                     packageId = rs.getInt(1);
                 } else {
-                    FilePrinter.printError(FilePrinter.INSERT_CHAR, "Failed inserting package [mesos: " + mesos + ", " + sender + ", quick: " + quick + ", to CharacterId: " + toCid + "]");
+                    FilePrinter.printError(FilePrinter.INSERT_CHAR, "Failed inserting package [mesos: " + mesos + ", " + sender + ", to CharacterId: " + toCid + "]");
                     return -1;
                 }
                 
@@ -353,18 +348,10 @@ public class DueyProcessor {
         return 0;
     }
     
-    public static void dueySendItem(MapleClient c, byte invTypeId, short itemPos, short amount, int sendMesos, String sendMessage, String recipient, boolean quick) {
+    public static void dueySendItem(MapleClient c, byte invTypeId, short itemPos, short amount, int sendMesos, String sendMessage, String recipient) {
         if (c.tryacquireClient()) {
             try {
-                int fee = MapleTrade.getFee(sendMesos);
-                if (!quick) {
-                    fee += 5000;
-                } else if (!c.getPlayer().haveItem(5330000)) {
-                    AutobanFactory.PACKET_EDIT.alert(c.getPlayer(), c.getPlayer().getName() + " tried to packet edit with Quick Delivery on duey.");
-                    FilePrinter.printError(FilePrinter.EXPLOITS + c.getPlayer().getName() + ".txt", c.getPlayer().getName() + " tried to use duey with Quick Delivery, mesos " + sendMesos + " and amount " + amount);
-                    c.disconnect(true, false);
-                    return;
-                }
+                final int fee = 5000 + MapleTrade.getFee(sendMesos);
                 
                 long finalcost = (long) sendMesos + fee;
                 if (finalcost < 0 || finalcost > Integer.MAX_VALUE || (amount < 1 && sendMesos == 0)) {
@@ -398,11 +385,7 @@ public class DueyProcessor {
                     return;
                 }
                 
-                if (quick) {
-                    MapleInventoryManipulator.removeById(c, MapleInventoryType.CASH, 5330000, (short) 1, false, false);
-                }
-                
-                int packageId = createPackage(sendMesos, sendMessage, c.getPlayer().getName(), recipientCid, quick);
+                int packageId = createPackage(sendMesos, sendMessage, c.getPlayer().getName(), recipientCid);
                 if (packageId == -1) {
                     c.announce(MaplePacketCreator.sendDueyMSG(DueyProcessor.Actions.TOCLIENT_SEND_ENABLE_ACTIONS.getCode()));
                     return;
@@ -507,17 +490,10 @@ public class DueyProcessor {
         }
     }
     
-    public static void dueySendTalk(MapleClient c, boolean quickDelivery) {
+    public static void dueySendTalk(MapleClient c) {
         if (c.tryacquireClient()) {
             try {
-                long timeNow = System.currentTimeMillis();
-                if(timeNow - c.getPlayer().getNpcCooldown() < ServerConstants.BLOCK_NPC_RACE_CONDT) {
-                    c.announce(MaplePacketCreator.enableActions());
-                    return;
-                }
-                c.getPlayer().setNpcCooldown(timeNow);
-                
-                c.announce(MaplePacketCreator.sendDuey(quickDelivery ? 0x1A : 0x8, loadPackages(c.getPlayer())));
+                c.announce(MaplePacketCreator.sendDuey((byte) 8, loadPackages(c.getPlayer())));
             } finally {
                 c.releaseClient();
             }
@@ -525,7 +501,7 @@ public class DueyProcessor {
     }
     
     public static void dueyCreatePackage(Item item, int mesos, String sender, int recipientCid) {
-        int packageId = createPackage(mesos, "", sender, recipientCid, false);
+        int packageId = createPackage(mesos, "", sender, recipientCid);
         if (packageId != -1) {
             insertPackageItem(packageId, item);
         }

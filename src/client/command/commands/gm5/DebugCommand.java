@@ -34,6 +34,7 @@ import server.life.SpawnPoint;
 import server.maps.MapleMapObject;
 import server.maps.MapleMapObjectType;
 import server.maps.MapleReactor;
+import tools.MaplePacketCreator;
 
 import java.awt.*;
 import java.util.Arrays;

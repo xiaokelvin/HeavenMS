@@ -1968,8 +1968,7 @@ public class MapleItemInformationProvider {
                 }
                 ps.close();
                 rs.close();
-                makerEntry = new MakerItemCreateEntry(cost, reqLevel, reqMakerLevel);
-                makerEntry.addGainItem(toCreate, toGive);
+                makerEntry = new MakerItemCreateEntry(cost, reqLevel, reqMakerLevel, toGive);
                 ps = con.prepareStatement("SELECT req_item, count FROM makerrecipedata WHERE itemid = ?");
                 ps.setInt(1, toCreate);
                 rs = ps.executeQuery();
@@ -2009,18 +2008,17 @@ public class MapleItemInformationProvider {
         return -1;
     }
 
-    public List<Pair<Integer, Integer>> getMakerDisassembledItems(Integer itemId) {
-        List<Pair<Integer, Integer>> items = new LinkedList<>();
-        
+    public int getMakerDisassembledQuantity(Integer itemId) {
+        int avail = 0;
         Connection con;
         try {
             con = DatabaseConnection.getConnection();
-            PreparedStatement ps = con.prepareStatement("SELECT req_item, count FROM makerrecipedata WHERE itemid = ? AND req_item >= 4260000 AND req_item < 4270000");
+            PreparedStatement ps = con.prepareStatement("SELECT count FROM makerrecipedata WHERE itemid = ? AND req_item >= 4260000 AND req_item <= 4260008 ORDER BY count DESC");
             ps.setInt(1, itemId);
             ResultSet rs = ps.executeQuery();
 
-            while (rs.next()) {
-                items.add(new Pair<>(rs.getInt("req_item"), rs.getInt("count") / 2));   // return to the player half of the crystals needed
+            if(rs.next()) {
+                avail = (int) Math.ceil(rs.getInt("count") / 2);   // return to the player half of the crystals needed
             }
 
             rs.close();
@@ -2030,7 +2028,7 @@ public class MapleItemInformationProvider {
             e.printStackTrace();
         }
 
-        return items;
+        return avail;
     }
 
     public int getMakerDisassembledFee(Integer itemId) {

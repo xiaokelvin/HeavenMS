@@ -172,7 +172,8 @@ public class MapleMapFactory {
         }
         MapleData timeMob = infoData.getChildByPath("timeMob");
         if (timeMob != null) {
-            map.setTimeMob(MapleDataTool.getInt(timeMob.getChildByPath("id")), MapleDataTool.getString(timeMob.getChildByPath("message")));
+            map.timeMob(MapleDataTool.getInt(timeMob.getChildByPath("id")),
+            MapleDataTool.getString(timeMob.getChildByPath("message")));
         }
 
         int bounds[] = new int[4];
@@ -241,10 +242,6 @@ public class MapleMapFactory {
                 int y2 = MapleDataTool.getInt(area.getChildByPath("y2"));
                 map.addMapleArea(new Rectangle(x1, y1, (x2 - x1), (y2 - y1)));
             }
-        }
-        if (mapData.getChildByPath("seat") != null) {
-            int seats = mapData.getChildByPath("seat").getChildren().size();
-            map.setSeats(seats);
         }
         if (event == null) {
             try {

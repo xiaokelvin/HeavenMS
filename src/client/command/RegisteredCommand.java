@@ -1,8 +1,6 @@
 /*
-	This file is part of the OdinMS Maple Story Server
-    Copyright (C) 2008 Patrick Huy <patrick.huy@frz.cc>
-		       Matthias Butz <matze@odinms.de>
-		       Jan Christian Meyer <vimes@odinms.de>
+    This file is part of the HeavenMS MapleStory Server, commands OdinMS-based
+    Copyleft (L) 2016 - 2018 RonanLana
 
     This program is free software: you can redistribute it and/or modify
     it under the terms of the GNU Affero General Public License as
@@ -19,21 +17,27 @@
     You should have received a copy of the GNU Affero General Public License
     along with this program.  If not, see <http://www.gnu.org/licenses/>.
 */
-package net.server.channel.handlers;
 
-import client.MapleClient;
-import client.inventory.MapleInventoryType;
-import net.AbstractMaplePacketHandler;
-import tools.data.input.SeekableLittleEndianAccessor;
+/*
+   @Author: Arthur L - Refactored command content into modules
+*/
+package client.command;
 
-public final class UseChairHandler extends AbstractMaplePacketHandler {
-    @Override
-    public final void handlePacket(SeekableLittleEndianAccessor slea, MapleClient c) {
-        int itemId = slea.readInt();
-        if (c.getPlayer().getInventory(MapleInventoryType.SETUP).findById(itemId) == null) {
-            return;
-        }
-        
-        c.getPlayer().sitChair(itemId);
+class RegisteredCommand {
+
+    private final Class<? extends Command> commandClass;
+    private final int rank;
+
+    RegisteredCommand(Class<? extends Command> commandClass, int rank){
+        this.commandClass = commandClass;
+        this.rank = rank;
+    }
+
+    public Class<? extends Command> getCommandClass() {
+        return commandClass;
+    }
+
+    public int getRank() {
+        return rank;
     }
 }
